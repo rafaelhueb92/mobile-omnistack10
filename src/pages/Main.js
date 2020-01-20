@@ -15,6 +15,7 @@ import {
 } from "expo-location";
 import { MaterialIcons } from "@expo/vector-icons";
 import api from "../services/api";
+import socket, { connect } from "../services/socket";
 
 function Main({ navigation }) {
   const [currentRegion, setCurrentRegion] = useState(null);
@@ -40,23 +41,34 @@ function Main({ navigation }) {
     loadInitialPosition();
   });
 
-  async function loadDevs() {
+  function setupWebSocket() {
     const { latitude, longitude } = currentRegion;
-    const response = await api.get("/search", {
-      params: {
-        latitude,
-        longitude,
-        techs
-      }
-    });
-    setDevs(response.data.devs);
+    connect(latitude, longitude, techs);
+  }
+
+  async function loadDevs() {
+    try {
+      const { latitude, longitude } = currentRegion;
+      const response = await api.get("/search", {
+        params: {
+          latitude,
+          longitude,
+          techs
+        }
+      });
+      console.log("RESP",response.data);
+      setDevs(response.data);
+      //setupWebSocket();
+    } catch (ex) {
+      console.log(ex);
+    }
   }
 
   function handleRegionChanged(region) {
     setCurrentRegion(region);
   }
 
-  const myCurrentLocation = { latitude: -23.4963243, longitude: -46.6222736 };
+  //const myCurrentLocation = { latitude: -23.4963243, longitude: -46.6222736 };
   return currentRegion ? (
     <>
       <MapView
@@ -142,8 +154,8 @@ const style = StyleSheet.create({
   },
   searchForm: {
     position: "absolute",
-    top,
-    left,
+    top: 20,
+    left: 20,
     right: 20,
     zIndex: 5,
     flexDirection: "row"
@@ -165,7 +177,7 @@ const style = StyleSheet.create({
     elevation: 2
   },
   loadButton: {
-    width,
+    width: 50,
     height: 50,
     backgroundColor: "#8E4Dff",
     borderRadius: 25,
